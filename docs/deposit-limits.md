@@ -13,7 +13,7 @@ Both setters require current-admin authorization. Deposit validation runs before
 the Stellar Asset Contract transfer.
 
 Read the values with `get_min_deposit_amount()`,
-`get_max_deposit_amount()`, or `get_config()`.
+`get_max_deposit_amount()`.
 
 ## Boundary examples
 
