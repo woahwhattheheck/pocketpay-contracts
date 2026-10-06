@@ -67,6 +67,15 @@ fn test_min_deposit_amount_read_helper() {
     assert_eq!(client.get_min_deposit_amount(), 250_i128);
 }
 
+/// The maximum deposit amount read helper reflects the configured value.
+#[test]
+fn test_max_deposit_amount_read_helper() {
+    let env = test_env();
+    let (admin, client, _token) = init_with_admin(&env);
+    client.set_max_deposit_amount(&admin, &1_000);
+    assert_eq!(client.get_max_deposit_amount(), 1_000_i128);
+}
+
 /// The maximum lock duration read helper reflects the configured value.
 #[test]
 fn test_max_lock_duration_read_helper() {
@@ -102,6 +111,7 @@ fn test_get_config_returns_defaults() {
     assert!(!config.paused);
     assert_eq!(config.pause_expiry, 0_u64);
     assert_eq!(config.min_deposit_amount, 0_i128);
+    assert_eq!(config.max_deposit_amount, 0_i128);
     assert_eq!(config.max_lock_duration, 0_u64);
     assert_eq!(config.min_lock_duration, 0_u64);
 }
@@ -113,11 +123,13 @@ fn test_get_config_reflects_configured_limits() {
     let (admin, client, _token) = init_with_admin(&env);
 
     client.set_min_deposit_amount(&admin, &500);
+    client.set_max_deposit_amount(&admin, &5_000);
     client.set_max_lock_duration(&admin, &2_592_000);
     client.set_min_lock_duration(&admin, &86_400);
 
     let config = client.get_config();
     assert_eq!(config.min_deposit_amount, 500_i128);
+    assert_eq!(config.max_deposit_amount, 5_000_i128);
     assert_eq!(config.max_lock_duration, 2_592_000_u64);
     assert_eq!(config.min_lock_duration, 86_400_u64);
 }
