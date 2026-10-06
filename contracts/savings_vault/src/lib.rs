@@ -125,6 +125,7 @@ pub struct ContractConfig {
     pub paused: bool,
     pub pause_expiry: u64,
     pub min_deposit_amount: i128,
+    pub max_deposit_amount: i128,
     pub max_lock_duration: u64,
     pub min_lock_duration: u64,
 }
@@ -170,6 +171,8 @@ pub enum DataKey {
     /// than zero, `deposit` rejects amounts strictly below it. A value of zero
     /// (or unset) means no floor is enforced.
     MinDepositAmount,
+    /// Maximum amount accepted by a single deposit call. Zero disables it.
+    MaxDepositAmount,
     /// Maximum lock duration rule (issue #343), in seconds. When set to a value
     /// greater than zero, `lock_funds` rejects locks whose duration
     /// (`unlock_time - current_time`) exceeds it. A value of zero (or unset)
@@ -232,6 +235,12 @@ pub enum ContractError {
     PauseDurationMustBePositive = 1006,
     /// `set_min_deposit_amount` called with a negative value.
     MinDepositAmountNegative = 1007,
+    /// `deposit` amount exceeds the configured per-call maximum.
+    AmountAboveMaximumDeposit = 1008,
+    /// `set_max_deposit_amount` called with a negative value.
+    MaxDepositAmountNegative = 1009,
+    /// Enabled minimum and maximum deposit settings conflict.
+    DepositLimitRangeInvalid = 1010,
 
     // ---- 2000s: Authorisation --------------------------------------------
     /// Caller is not the stored admin (failed `assert_admin` check inside
@@ -649,6 +658,15 @@ impl SavingsVault {
             panic_with_error!(&env, ContractError::MinDepositAmountNegative)
         }
 
+        let max_amount: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::MaxDepositAmount)
+            .unwrap_or(0);
+        if max_amount > 0 && min_amount > max_amount {
+            panic_with_error!(&env, ContractError::DepositLimitRangeInvalid)
+        }
+
         env.storage()
             .instance()
             .set(&DataKey::MinDepositAmount, &min_amount);
@@ -670,6 +688,48 @@ impl SavingsVault {
         env.storage()
             .instance()
             .get(&DataKey::MinDepositAmount)
+            .unwrap_or(0)
+    }
+
+    // -----------------------------------------------------------------------
+    // Maximum deposit amount rule (issue #452)
+    // -----------------------------------------------------------------------
+
+    /// Sets the maximum amount accepted by one `deposit` call. Pass `0`
+    /// to disable the ceiling. If both bounds are enabled, max must be >= min.
+    pub fn set_max_deposit_amount(env: Env, admin: Address, max_amount: i128) {
+        Self::assert_initialized(&env).unwrap_or_else(|e| panic_with_error!(&env, e));
+        admin.require_auth();
+        Self::assert_admin(&env, &admin).unwrap_or_else(|e| panic_with_error!(&env, e));
+
+        if max_amount < 0 {
+            panic_with_error!(&env, ContractError::MaxDepositAmountNegative)
+        }
+
+        let min_amount: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::MinDepositAmount)
+            .unwrap_or(0);
+        if max_amount > 0 && min_amount > 0 && max_amount < min_amount {
+            panic_with_error!(&env, ContractError::DepositLimitRangeInvalid)
+        }
+
+        env.storage()
+            .instance()
+            .set(&DataKey::MaxDepositAmount, &max_amount);
+
+        let topics = (symbol_short!("cfg_maxdp"), admin.clone());
+        env.events().publish(topics, max_amount);
+
+        log!(&env, "Max deposit amount set to {} by admin={}", max_amount, admin);
+    }
+
+    /// Returns the per-call maximum deposit amount. `0` means disabled.
+    pub fn get_max_deposit_amount(env: Env) -> i128 {
+        env.storage()
+            .instance()
+            .get(&DataKey::MaxDepositAmount)
             .unwrap_or(0)
     }
 
@@ -875,6 +935,11 @@ impl SavingsVault {
                 .instance()
                 .get(&DataKey::MinDepositAmount)
                 .unwrap_or(0),
+            max_deposit_amount: env
+                .storage()
+                .instance()
+                .get(&DataKey::MaxDepositAmount)
+                .unwrap_or(0),
             max_lock_duration: env
                 .storage()
                 .instance()
@@ -913,6 +978,15 @@ impl SavingsVault {
             .unwrap_or(0);
         if min_deposit > 0 && amount < min_deposit {
             panic_with_error!(&env, ContractError::AmountBelowMinimumDeposit)
+        }
+
+        let max_deposit: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::MaxDepositAmount)
+            .unwrap_or(0);
+        if max_deposit > 0 && amount > max_deposit {
+            panic_with_error!(&env, ContractError::AmountAboveMaximumDeposit)
         }
 
         let token = env
