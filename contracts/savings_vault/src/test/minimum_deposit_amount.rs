@@ -1,8 +1,7 @@
-//! Minimum deposit amount rule tests for the Savings Vault contract (issue #342).
+//! Deposit limit rule tests for the Savings Vault contract (issues #342/#452).
 //!
-//! These tests verify that the admin-configurable minimum deposit amount is
-//! enforced by `deposit`, that it can be toggled off, and that negative
-//! configuration values are rejected.
+//! These tests verify admin-configurable minimum/maximum per-call deposit
+//! bounds, boundary behavior, range consistency, and authorization.
 
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
@@ -96,6 +95,45 @@ fn test_deposit_above_minimum_succeeds() {
     assert_eq!(client.get_balance(&user), 250_i128);
 }
 
+/// A deposit exactly at the configured maximum succeeds.
+#[test]
+fn test_deposit_at_maximum_succeeds() {
+    let env = test_env();
+    let (admin, client) = init_with_admin(&env);
+    let user = Address::generate(&env);
+
+    client.set_max_deposit_amount(&admin, &250);
+    deposit_balance(&client, &user, 250);
+    assert_eq!(client.get_balance(&user), 250_i128);
+}
+
+/// A deposit above the configured maximum is rejected.
+#[test]
+#[should_panic]
+fn test_deposit_above_maximum_panics() {
+    let env = test_env();
+    let (admin, client) = init_with_admin(&env);
+    let user = Address::generate(&env);
+
+    client.set_max_deposit_amount(&admin, &250);
+    deposit_balance(&client, &user, 251);
+}
+
+/// Setting the maximum to 0 disables the ceiling.
+#[test]
+fn test_maximum_rule_can_be_disabled() {
+    let env = test_env();
+    let (admin, client) = init_with_admin(&env);
+    let user = Address::generate(&env);
+
+    client.set_max_deposit_amount(&admin, &100);
+    client.set_max_deposit_amount(&admin, &0);
+    assert_eq!(client.get_max_deposit_amount(), 0_i128);
+
+    deposit_balance(&client, &user, 101);
+    assert_eq!(client.get_balance(&user), 101_i128);
+}
+
 /// Setting the rule to 0 disables the floor; small deposits succeed again.
 #[test]
 fn test_minimum_rule_can_be_disabled() {
@@ -135,4 +173,44 @@ fn test_set_min_deposit_amount_rejects_negative() {
     let (admin, client) = init_with_admin(&env);
 
     client.set_min_deposit_amount(&admin, &-1);
+}
+
+
+// ---------------------------------------------------------------------------
+// Maximum/range configuration guards (issue #452)
+// ---------------------------------------------------------------------------
+
+#[test]
+#[should_panic]
+fn test_set_max_deposit_amount_requires_admin() {
+    let env = test_env();
+    let (_admin, client) = init_with_admin(&env);
+    let attacker = Address::generate(&env);
+    client.set_max_deposit_amount(&attacker, &100);
+}
+
+#[test]
+#[should_panic]
+fn test_set_max_deposit_amount_rejects_negative() {
+    let env = test_env();
+    let (admin, client) = init_with_admin(&env);
+    client.set_max_deposit_amount(&admin, &-1);
+}
+
+#[test]
+#[should_panic]
+fn test_set_max_deposit_amount_rejects_below_minimum() {
+    let env = test_env();
+    let (admin, client) = init_with_admin(&env);
+    client.set_min_deposit_amount(&admin, &100);
+    client.set_max_deposit_amount(&admin, &99);
+}
+
+#[test]
+#[should_panic]
+fn test_set_min_deposit_amount_rejects_above_maximum() {
+    let env = test_env();
+    let (admin, client) = init_with_admin(&env);
+    client.set_max_deposit_amount(&admin, &100);
+    client.set_min_deposit_amount(&admin, &101);
 }
