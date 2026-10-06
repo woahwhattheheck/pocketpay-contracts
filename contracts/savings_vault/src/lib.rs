@@ -125,7 +125,6 @@ pub struct ContractConfig {
     pub paused: bool,
     pub pause_expiry: u64,
     pub min_deposit_amount: i128,
-    pub max_deposit_amount: i128,
     pub max_lock_duration: u64,
     pub min_lock_duration: u64,
 }
@@ -934,11 +933,6 @@ impl SavingsVault {
                 .storage()
                 .instance()
                 .get(&DataKey::MinDepositAmount)
-                .unwrap_or(0),
-            max_deposit_amount: env
-                .storage()
-                .instance()
-                .get(&DataKey::MaxDepositAmount)
                 .unwrap_or(0),
             max_lock_duration: env
                 .storage()
