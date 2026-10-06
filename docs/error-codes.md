@@ -84,13 +84,31 @@ as arbitrary panic strings.
 - **Likely cause:** Admin-console sign bug.
 - **Caller action:** Admin console validation.
 
+### `AmountAboveMaximumDeposit` (1008)
+
+- **Raised by:** `deposit`
+- **Meaning:** the deposit is above an enabled per-call maximum.
+- **Caller action:** Read `get_max_deposit_amount()` or `get_config()` before signing.
+
+### `MaxDepositAmountNegative` (1009)
+
+- **Raised by:** `set_max_deposit_amount` (admin)
+- **Meaning:** the proposed maximum is negative.
+- **Caller action:** Use a non-negative value; `0` disables the ceiling.
+
+### `DepositLimitRangeInvalid` (1010)
+
+- **Raised by:** `set_min_deposit_amount`, `set_max_deposit_amount`
+- **Meaning:** enabled minimum and maximum bounds conflict.
+- **Caller action:** Keep the enabled minimum less than or equal to the maximum.
+
 ## 2000s — Authorisation
 
 ### `NotAuthorizedAdmin` (2001)
 
 - **Raised by:** all admin-only entrypoints (`pause`, `unpause`,
-  `set_min_deposit_amount`, `set_max_lock_duration`, `set_min_lock_duration`,
-  `transfer_admin`)
+  `set_min_deposit_amount`, `set_max_deposit_amount`, `set_max_lock_duration`,
+  `set_min_lock_duration`, `transfer_admin`)
 - **Meaning:** The `require_auth`-verified caller does not match the stored
   `Admin`.
 - **Likely cause:** Wrong wallet connected, or trying to use a governance role
