@@ -1,0 +1,497 @@
+{
+  "schema_version": 1,
+  "source_main_sha": "7988c6efec9a73162ed7d2fffb3b8b6ebd5a7b67",
+  "source_contract": "contracts/savings_vault/src/lib.rs",
+  "format": "decoded-contract-native-values",
+  "purpose": "Deterministic, synthetic SDK mapper fixtures; NOT real Soroban RPC/XDR receipts",
+  "actor_labels": {
+    "fixture-alice": "Non-address fixture symbol; replace with test Address before invoking contract"
+  },
+  "encoding": "Every i128/u64 value is a decimal string; contract error u32 codes are JSON integers; vault_events exclude SAC transfer events.",
+  "scenarios": [
+    {
+      "id": "deposit-success",
+      "at": "1700000000",
+      "invoke": {
+        "method": "deposit",
+        "args": [
+          "fixture-alice",
+          "500"
+        ]
+      },
+      "before": {
+        "available": "0",
+        "locked": "0",
+        "wallet": "1000",
+        "vault_custody": "0",
+        "locks": []
+      },
+      "after": {
+        "available": "500",
+        "locked": "0",
+        "wallet": "500",
+        "vault_custody": "500",
+        "locks": []
+      },
+      "result": {
+        "ok": true
+      },
+      "vault_events": [
+        {
+          "topics": [
+            "deposit",
+            "fixture-alice"
+          ],
+          "data": [
+            "500",
+            "500"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lock-success",
+      "at": "1700000000",
+      "invoke": {
+        "method": "lock_funds",
+        "args": [
+          "fixture-alice",
+          "200",
+          "1700003600"
+        ]
+      },
+      "before": {
+        "available": "500",
+        "locked": "0",
+        "wallet": "500",
+        "vault_custody": "500",
+        "locks": []
+      },
+      "after": {
+        "available": "300",
+        "locked": "200",
+        "wallet": "500",
+        "vault_custody": "500",
+        "locks": [
+          {
+            "id": "1",
+            "owner": "fixture-alice",
+            "amount": "200",
+            "created_time": "1700000000",
+            "unlock_time": "1700003600",
+            "withdrawn": false
+          }
+        ]
+      },
+      "result": {
+        "ok": true,
+        "value": "1"
+      },
+      "vault_events": [
+        {
+          "topics": [
+            "lock",
+            "fixture-alice"
+          ],
+          "data": [
+            "200",
+            "1700003600",
+            "300",
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "withdraw-available-success",
+      "at": "1700000000",
+      "invoke": {
+        "method": "withdraw",
+        "args": [
+          "fixture-alice",
+          "100"
+        ]
+      },
+      "before": {
+        "available": "300",
+        "locked": "200",
+        "wallet": "500",
+        "vault_custody": "500",
+        "locks": [
+          {
+            "id": "1",
+            "owner": "fixture-alice",
+            "amount": "200",
+            "created_time": "1700000000",
+            "unlock_time": "1700003600",
+            "withdrawn": false
+          }
+        ]
+      },
+      "after": {
+        "available": "200",
+        "locked": "200",
+        "wallet": "600",
+        "vault_custody": "400",
+        "locks": [
+          {
+            "id": "1",
+            "owner": "fixture-alice",
+            "amount": "200",
+            "created_time": "1700000000",
+            "unlock_time": "1700003600",
+            "withdrawn": false
+          }
+        ]
+      },
+      "result": {
+        "ok": true
+      },
+      "vault_events": [
+        {
+          "topics": [
+            "withdraw",
+            "fixture-alice"
+          ],
+          "data": [
+            "100",
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "withdraw-above-available-rejected",
+      "at": "1700000000",
+      "invoke": {
+        "method": "withdraw",
+        "args": [
+          "fixture-alice",
+          "201"
+        ]
+      },
+      "before": {
+        "available": "200",
+        "locked": "200",
+        "wallet": "600",
+        "vault_custody": "400",
+        "locks": [
+          {
+            "id": "1",
+            "owner": "fixture-alice",
+            "amount": "200",
+            "created_time": "1700000000",
+            "unlock_time": "1700003600",
+            "withdrawn": false
+          }
+        ]
+      },
+      "after": {
+        "available": "200",
+        "locked": "200",
+        "wallet": "600",
+        "vault_custody": "400",
+        "locks": [
+          {
+            "id": "1",
+            "owner": "fixture-alice",
+            "amount": "200",
+            "created_time": "1700000000",
+            "unlock_time": "1700003600",
+            "withdrawn": false
+          }
+        ]
+      },
+      "result": {
+        "ok": false,
+        "error": {
+          "domain": "contract",
+          "code": 4001,
+          "name": "InsufficientBalance"
+        }
+      },
+      "vault_events": []
+    },
+    {
+      "id": "withdraw-lock-before-maturity-rejected",
+      "at": "1700003599",
+      "invoke": {
+        "method": "withdraw_lock",
+        "args": [
+          "fixture-alice",
+          "1"
+        ]
+      },
+      "before": {
+        "available": "200",
+        "locked": "200",
+        "wallet": "600",
+        "vault_custody": "400",
+        "locks": [
+          {
+            "id": "1",
+            "owner": "fixture-alice",
+            "amount": "200",
+            "created_time": "1700000000",
+            "unlock_time": "1700003600",
+            "withdrawn": false
+          }
+        ]
+      },
+      "after": {
+        "available": "200",
+        "locked": "200",
+        "wallet": "600",
+        "vault_custody": "400",
+        "locks": [
+          {
+            "id": "1",
+            "owner": "fixture-alice",
+            "amount": "200",
+            "created_time": "1700000000",
+            "unlock_time": "1700003600",
+            "withdrawn": false
+          }
+        ]
+      },
+      "result": {
+        "ok": false,
+        "error": {
+          "domain": "contract",
+          "code": 5003,
+          "name": "LockNotMatured"
+        }
+      },
+      "vault_events": []
+    },
+    {
+      "id": "withdraw-matured-lock-success",
+      "at": "1700003600",
+      "invoke": {
+        "method": "withdraw_lock",
+        "args": [
+          "fixture-alice",
+          "1"
+        ]
+      },
+      "before": {
+        "available": "200",
+        "locked": "200",
+        "wallet": "600",
+        "vault_custody": "400",
+        "locks": [
+          {
+            "id": "1",
+            "owner": "fixture-alice",
+            "amount": "200",
+            "created_time": "1700000000",
+            "unlock_time": "1700003600",
+            "withdrawn": false
+          }
+        ]
+      },
+      "after": {
+        "available": "200",
+        "locked": "0",
+        "wallet": "800",
+        "vault_custody": "200",
+        "locks": [
+          {
+            "id": "1",
+            "owner": "fixture-alice",
+            "amount": "0",
+            "created_time": "1700000000",
+            "unlock_time": "1700003600",
+            "withdrawn": true
+          }
+        ]
+      },
+      "result": {
+        "ok": true
+      },
+      "vault_events": [
+        {
+          "topics": [
+            "withdraw_lock",
+            "fixture-alice"
+          ],
+          "data": [
+            "1",
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zero-deposit-rejected",
+      "at": "1700000000",
+      "invoke": {
+        "method": "deposit",
+        "args": [
+          "fixture-alice",
+          "0"
+        ]
+      },
+      "before": {
+        "available": "0",
+        "locked": "0",
+        "wallet": "1000",
+        "vault_custody": "0",
+        "locks": []
+      },
+      "after": {
+        "available": "0",
+        "locked": "0",
+        "wallet": "1000",
+        "vault_custody": "0",
+        "locks": []
+      },
+      "result": {
+        "ok": false,
+        "error": {
+          "domain": "contract",
+          "code": 1001,
+          "name": "AmountNotPositive"
+        }
+      },
+      "vault_events": []
+    },
+    {
+      "id": "minimum-deposit-rejected",
+      "at": "1700000000",
+      "config": {
+        "min_deposit_amount": "100"
+      },
+      "invoke": {
+        "method": "deposit",
+        "args": [
+          "fixture-alice",
+          "99"
+        ]
+      },
+      "before": {
+        "available": "0",
+        "locked": "0",
+        "wallet": "1000",
+        "vault_custody": "0",
+        "locks": []
+      },
+      "after": {
+        "available": "0",
+        "locked": "0",
+        "wallet": "1000",
+        "vault_custody": "0",
+        "locks": []
+      },
+      "result": {
+        "ok": false,
+        "error": {
+          "domain": "contract",
+          "code": 1005,
+          "name": "AmountBelowMinimumDeposit"
+        }
+      },
+      "vault_events": []
+    },
+    {
+      "id": "insufficient-wallet-deposit-rejected",
+      "at": "1700000000",
+      "invoke": {
+        "method": "deposit",
+        "args": [
+          "fixture-alice",
+          "100"
+        ]
+      },
+      "before": {
+        "available": "0",
+        "locked": "0",
+        "wallet": "50",
+        "vault_custody": "0",
+        "locks": []
+      },
+      "after": {
+        "available": "0",
+        "locked": "0",
+        "wallet": "50",
+        "vault_custody": "0",
+        "locks": []
+      },
+      "result": {
+        "ok": false,
+        "error": {
+          "domain": "host",
+          "code": null,
+          "name": "token-transfer-rejected"
+        }
+      },
+      "vault_events": []
+    }
+  ],
+  "reads": [
+    {
+      "id": "read-after-deposit",
+      "at": "1700000000",
+      "from": "deposit-success",
+      "expected": {
+        "get_balance": "500",
+        "get_locked_balance": "0",
+        "can_withdraw": false
+      }
+    },
+    {
+      "id": "read-after-lock-before-maturity",
+      "at": "1700000000",
+      "from": "lock-success",
+      "expected": {
+        "get_balance": "300",
+        "get_locked_balance": "200",
+        "can_withdraw": false,
+        "get_lock": {
+          "id": "1",
+          "owner": "fixture-alice",
+          "amount": "200",
+          "created_time": "1700000000",
+          "unlock_time": "1700003600",
+          "withdrawn": false
+        }
+      }
+    },
+    {
+      "id": "read-at-maturity-before-claim",
+      "at": "1700003600",
+      "from": "withdraw-available-success",
+      "expected": {
+        "get_balance": "200",
+        "get_locked_balance": "200",
+        "can_withdraw": true,
+        "get_lock": {
+          "id": "1",
+          "owner": "fixture-alice",
+          "amount": "200",
+          "created_time": "1700000000",
+          "unlock_time": "1700003600",
+          "withdrawn": false
+        }
+      }
+    },
+    {
+      "id": "read-after-matured-claim",
+      "at": "1700003600",
+      "from": "withdraw-matured-lock-success",
+      "expected": {
+        "get_balance": "200",
+        "get_locked_balance": "0",
+        "can_withdraw": false,
+        "get_lock": {
+          "id": "1",
+          "owner": "fixture-alice",
+          "amount": "0",
+          "created_time": "1700000000",
+          "unlock_time": "1700003600",
+          "withdrawn": true
+        }
+      }
+    }
+  ]
+}
