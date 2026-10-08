@@ -218,6 +218,7 @@ stellar-pocketpay-contracts/
 - [Contract Evaluation-Readiness Checklist](docs/evaluation-readiness-checklist.md) – Pre-evaluation checklist covering issue requirements, contract tests, required checks, security, edge cases, acceptance criteria, and the fact that merge does not guarantee approval or payment.
 - [Approval Readiness Checklist](docs/approval-readiness-checklist.md) – Final checklist before requesting evaluation: implementation completeness, tests, CI status, acceptance criteria review, docs, known limitations, and the post-merge-is-not-approval note.
 - [Traceability Table Guide](docs/traceability-table.md) – Standard format for mapping PR changes to issue acceptance criteria, with worked examples.
+- [SDK Integration Fixtures](fixtures/vault/README.md) – Deterministic decoded vault lifecycle, error and event examples for SDK clients, with an isolated offline consistency check.
 - [Payment-Period Conduct Guidance](docs/payment-period-conduct.md) – Expectations for how contributors raise payment-status questions, and how GrantFox's evaluation process relates to this repository's review process.
 
 ---
